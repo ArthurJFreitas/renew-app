@@ -105,7 +105,7 @@ export default function AuthPage() {
       const {  error } = await supabase.auth.signInWithOAuth({
         provider: 'github',
         options: {
-          redirectTo: 'http://localhost:3000/dashboard',
+          redirectTo: process.env.NEXT_PUBLIC_SITE_URL + 'dashboard',
         },
       })
 
