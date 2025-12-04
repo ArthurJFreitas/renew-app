@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 
 import {
@@ -21,7 +22,6 @@ import Logo from "@/assets/logos/renew.png";
 
 import Image from "next/image";
 
-import GoogleIcon from "@/assets/icons/google.svg";
 import GitHubIcon from "@/assets/icons/github.svg";
 import { getSupabaseClientBrowser } from "@/lib/db/browser-client";
 import toast from "react-hot-toast";
@@ -63,13 +63,15 @@ export default function AuthPage() {
   const { email, password } = formData;
 
   const [mode, setMode] = useState<"login" | "register">("login");
+  const router = useRouter();
+
   const supabase = getSupabaseClientBrowser();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     if(mode === "login") {
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { error } = await supabase.auth.signInWithPassword({
         email: email,
         password: password,
       });
@@ -79,11 +81,12 @@ export default function AuthPage() {
         toast.error("Login failed. Please check your credentials.");
       } else {
         toast.success("Login successful!");
+        router.push("/dashboard");
       }
     }
 
     if(mode === "register") {
-      const { data, error } = await supabase.auth.signUp({
+      const { error } = await supabase.auth.signUp({
         email: email,
         password: password,
       });
@@ -92,11 +95,24 @@ export default function AuthPage() {
         console.error(error);
         toast.error("Registration failed. Please check your credentials.");
       } else {
+        setFormData({  email: "", password: "" });
         toast.success("Registration successful!, please check your email to confirm your account.");
       }
     }
   }
 
+    const handleGitHubSignIn = async () => {
+      const {  error } = await supabase.auth.signInWithOAuth({
+        provider: 'github',
+        options: {
+          redirectTo: 'http://localhost:3000/dashboard',
+        },
+      })
+
+      if (error) {
+        console.error('Error signing in with GitHub:', error.message)
+      }
+    }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-white to-gray-100 px-4">
@@ -138,8 +154,6 @@ export default function AuthPage() {
 
                 <PasswordField label="Password" value={password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} />
 
-                {mode === "register" && <PasswordField label="Confirm Password" />}
-
                 <Button className="w-full h-11 text-base font-medium rounded-xl bg-blue-600 text-white hover:bg-blue-500 transition cursor-pointer">
                   {mode === "login" ? "Login" : "Create Account"}
                 </Button>
@@ -148,16 +162,7 @@ export default function AuthPage() {
 
                 <div className="flex flex-col gap-3">
                   <Button
-                    variant="outline"
-                    type="button"
-                    className="w-full h-11 rounded-xl border-gray-300 text-gray-700 hover:bg-gray-100 active:bg-gray-200 transition cursor-pointer"
-                  >
-                    Continue with Google
-                    <Image src={GoogleIcon} alt="Google Icon" width={20} height={20} className='object-contain filter brightness-0'
-                    />
-                  </Button>
-
-                  <Button
+                    onClick={handleGitHubSignIn}
                     type="button"
                     variant="outline"
                     className="w-full h-11 rounded-xl border-gray-300 text-gray-700 hover:bg-gray-100 active:bg-gray-200 transition cursor-pointer"
